@@ -1,3 +1,75 @@
+def get_related_queries(city, product):
+    geo_code = cities.get(city)
+    if not geo_code:
+        return {"top": [], "rising": []}
+    retry_count = 0
+    while retry_count < 3:
+        try:
+            pytrends.build_payload([product], timeframe='today 3-m', geo=geo_code)
+            related = pytrends.related_queries()
+            queries = related.get(product, {})
+            return {
+                "top": queries.get("top", []).to_dict('records') if queries.get("top") is not None else [],
+                "rising": queries.get("rising", []).to_dict('records') if queries.get("rising") is not None else []
+            }
+        except TooManyRequestsError:
+            retry_count += 1
+            wait_time = 60 * retry_count
+            print(f"Rate limited by Google. Sleeping for {wait_time} seconds...")
+            time.sleep(wait_time)
+        except Exception as e:
+            print(f"Error fetching related queries for {city}, {product}: {e}")
+            return {"top": [], "rising": []}
+    return {"top": [], "rising": []}
+
+def get_related_topics(city, product):
+    geo_code = cities.get(city)
+    if not geo_code:
+        return {"top": [], "rising": []}
+    retry_count = 0
+    while retry_count < 3:
+        try:
+            pytrends.build_payload([product], timeframe='today 3-m', geo=geo_code)
+            related = pytrends.related_topics()
+            topics = related.get(product, {})
+            return {
+                "top": topics.get("top", []).to_dict('records') if topics.get("top") is not None else [],
+                "rising": topics.get("rising", []).to_dict('records') if topics.get("rising") is not None else []
+            }
+        except TooManyRequestsError:
+            retry_count += 1
+            wait_time = 60 * retry_count
+            print(f"Rate limited by Google. Sleeping for {wait_time} seconds...")
+            time.sleep(wait_time)
+        except Exception as e:
+            print(f"Error fetching related topics for {city}, {product}: {e}")
+            return {"top": [], "rising": []}
+    return {"top": [], "rising": []}
+
+def get_interest_by_region(city, product):
+    geo_code = cities.get(city)
+    if not geo_code:
+        return []
+    retry_count = 0
+    while retry_count < 3:
+        try:
+            pytrends.build_payload([product], timeframe='today 3-m', geo=geo_code)
+            region_df = pytrends.interest_by_region(resolution='REGION', inc_low_vol=True, inc_geo_code=True)
+            if region_df.empty:
+                return []
+            region_df = region_df.reset_index()
+            region_df = region_df[[region_df.columns[0], product]]
+            region_df.columns = ['region', 'trend_score']
+            return region_df.to_dict('records')
+        except TooManyRequestsError:
+            retry_count += 1
+            wait_time = 60 * retry_count
+            print(f"Rate limited by Google. Sleeping for {wait_time} seconds...")
+            time.sleep(wait_time)
+        except Exception as e:
+            print(f"Error fetching interest by region for {city}, {product}: {e}")
+            return []
+    return []
 def get_90_days_trend_with_analysis(city, product, window=7):
     """
     Fetch 90 days of trend data for a city/product from live pytrends and perform moving average, ARIMA, and SARIMA analysis.

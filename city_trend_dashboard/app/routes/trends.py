@@ -1,10 +1,24 @@
 from fastapi import APIRouter, Query
-from app.services.trends_service import cities, products, fetch_trends_for_city_product_timeframe, get_90_days_trend_with_analysis
-
+from app.services.trends_service import cities, products, fetch_trends_for_city_product_timeframe, get_90_days_trend_with_analysis, get_related_queries, get_related_topics, get_interest_by_region
 
 from app.services.db_service import collection
 
 router = APIRouter()
+
+# Related queries endpoint
+@router.get("/related-queries")
+def related_queries(city: str = Query(...), product: str = Query(...)):
+    return get_related_queries(city, product)
+
+# Related topics endpoint
+@router.get("/related-topics")
+def related_topics(city: str = Query(...), product: str = Query(...)):
+    return get_related_topics(city, product)
+
+# Interest by region endpoint
+@router.get("/interest-by-region")
+def interest_by_region(city: str = Query(...), product: str = Query(...)):
+    return get_interest_by_region(city, product)
 
 @router.get("/cities")
 def get_cities():
