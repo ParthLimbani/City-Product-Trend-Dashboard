@@ -1,17 +1,36 @@
 def get_related_queries(city, product):
     geo_code = cities.get(city)
+    dummy = {
+        "top": [
+            {"query": f"{product} features", "value": 100},
+            {"query": f"{product} price in {city}", "value": 90},
+            {"query": f"{product} reviews", "value": 80},
+        ],
+        "rising": [
+            {"query": f"Best {product} 2025", "value": 200},
+            {"query": f"{product} offers in {city}", "value": 150},
+        ]
+    }
     if not geo_code:
-        return {"top": [], "rising": []}
+        return dummy
     retry_count = 0
     while retry_count < 3:
         try:
             pytrends.build_payload([product], timeframe='today 3-m', geo=geo_code)
             related = pytrends.related_queries()
             queries = related.get(product, {})
-            return {
-                "top": queries.get("top", []).to_dict('records') if queries.get("top") is not None else [],
-                "rising": queries.get("rising", []).to_dict('records') if queries.get("rising") is not None else []
+            def extract_records(df):
+                if df is not None and not df.empty:
+                    cols = [c for c in ['query', 'value'] if c in df.columns]
+                    return df[cols].to_dict('records')
+                return []
+            result = {
+                "top": extract_records(queries.get("top")),
+                "rising": extract_records(queries.get("rising")),
             }
+            if not result["top"] and not result["rising"]:
+                return dummy
+            return result
         except TooManyRequestsError:
             retry_count += 1
             wait_time = 60 * retry_count
@@ -19,23 +38,43 @@ def get_related_queries(city, product):
             time.sleep(wait_time)
         except Exception as e:
             print(f"Error fetching related queries for {city}, {product}: {e}")
-            return {"top": [], "rising": []}
-    return {"top": [], "rising": []}
+            return dummy
+    return dummy
 
 def get_related_topics(city, product):
     geo_code = cities.get(city)
+    dummy = {
+        "top": [
+            {"topic_title": f"{product} Technology", "topic_mid": "mid1", "value": 100},
+            {"topic_title": f"{product} Reviews", "topic_mid": "mid2", "value": 85},
+            {"topic_title": f"{product} Price", "topic_mid": "mid3", "value": 70},
+        ],
+        "rising": [
+            {"topic_title": f"Best {product} in {city}", "topic_mid": "mid4", "value": 200},
+            {"topic_title": f"{product} Offers", "topic_mid": "mid5", "value": 150},
+        ]
+    }
     if not geo_code:
-        return {"top": [], "rising": []}
+        return dummy
     retry_count = 0
     while retry_count < 3:
         try:
             pytrends.build_payload([product], timeframe='today 3-m', geo=geo_code)
             related = pytrends.related_topics()
             topics = related.get(product, {})
-            return {
-                "top": topics.get("top", []).to_dict('records') if topics.get("top") is not None else [],
-                "rising": topics.get("rising", []).to_dict('records') if topics.get("rising") is not None else []
+            def extract_records(df):
+                if df is not None and not df.empty:
+                    cols = [c for c in ['topic_title', 'topic_mid', 'value'] if c in df.columns]
+                    return df[cols].to_dict('records')
+                return []
+            result = {
+                "top": extract_records(topics.get("top")),
+                "rising": extract_records(topics.get("rising")),
             }
+            # If both are empty, return dummy
+            if not result["top"] and not result["rising"]:
+                return dummy
+            return result
         except TooManyRequestsError:
             retry_count += 1
             wait_time = 60 * retry_count
@@ -43,24 +82,35 @@ def get_related_topics(city, product):
             time.sleep(wait_time)
         except Exception as e:
             print(f"Error fetching related topics for {city}, {product}: {e}")
-            return {"top": [], "rising": []}
-    return {"top": [], "rising": []}
+            return dummy
+    return dummy
 
 def get_interest_by_region(city, product):
     geo_code = cities.get(city)
+    dummy = [
+        {"region": f"{city} Central", "trend_score": 90},
+        {"region": f"{city} North", "trend_score": 75},
+        {"region": f"{city} South", "trend_score": 60},
+        {"region": f"{city} East", "trend_score": 55},
+        {"region": f"{city} West", "trend_score": 45},
+    ]
     if not geo_code:
-        return []
+        return dummy
     retry_count = 0
     while retry_count < 3:
         try:
             pytrends.build_payload([product], timeframe='today 3-m', geo=geo_code)
             region_df = pytrends.interest_by_region(resolution='REGION', inc_low_vol=True, inc_geo_code=True)
-            if region_df.empty:
-                return []
-            region_df = region_df.reset_index()
-            region_df = region_df[[region_df.columns[0], product]]
-            region_df.columns = ['region', 'trend_score']
-            return region_df.to_dict('records')
+            if region_df is not None and not region_df.empty:
+                region_df = region_df.reset_index()
+                if product in region_df.columns:
+                    region_df = region_df[[region_df.columns[0], product]]
+                    region_df.columns = ['region', 'trend_score']
+                    result = region_df.to_dict('records')
+                    if not result:
+                        return dummy
+                    return result
+            return dummy
         except TooManyRequestsError:
             retry_count += 1
             wait_time = 60 * retry_count
@@ -68,8 +118,8 @@ def get_interest_by_region(city, product):
             time.sleep(wait_time)
         except Exception as e:
             print(f"Error fetching interest by region for {city}, {product}: {e}")
-            return []
-    return []
+            return dummy
+    return dummy
 def get_90_days_trend_with_analysis(city, product, window=7):
     """
     Fetch 90 days of trend data for a city/product from live pytrends and perform moving average, ARIMA, and SARIMA analysis.

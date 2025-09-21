@@ -1,5 +1,4 @@
 import RelatedQueriesTopics from './RelatedQueriesTopics';
-import InterestByRegion from './InterestByRegion';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Line } from 'react-chartjs-2';
@@ -137,8 +136,7 @@ const TrendAnalysisChart = () => {
       {/* Related Queries & Topics Visualization */}
       <RelatedQueriesTopics city={city} product={product} />
 
-      {/* Interest by Region Visualization */}
-      <InterestByRegion city={city} product={product} />
+  {/* Interest by Region Visualization removed as requested */}
     </div>
   );
 };
