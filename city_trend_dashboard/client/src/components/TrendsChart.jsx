@@ -23,17 +23,17 @@ const TrendsChart = () => {
     axios.get('http://127.0.0.1:8000/api/products').then(res => setProducts(res.data));
     axios.get('http://127.0.0.1:8000/api/timeframes').then(res => setTimeframes(res.data));
     // Fetch default preview
-    setLoading(true);
-    setError(null);
-    axios.get(`http://127.0.0.1:8000/api?city=Mumbai&product=Mobile%20phones&timeframe=now%207-d`)
-      .then(res => {
-        setTrends(res.data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError('Failed to fetch trends');
-        setLoading(false);
-      });
+    // setLoading(true);
+    // setError(null);
+    // axios.get(`http://127.0.0.1:8000/api?city=Mumbai&product=Mobile%20phones&timeframe=now%207-d`)
+    //   .then(res => {
+    //     setTrends(res.data);
+    //     setLoading(false);
+    //   })
+    //   .catch(() => {
+    //     setError('Failed to fetch trends');
+    //     setLoading(false);
+    //   });
   }, []);
 
   // API call only on button click
@@ -125,8 +125,8 @@ const TrendsChart = () => {
       ) : (
         <div>No trends data available for chart.</div>
       )}
-      <h3>Trends Data (JSON)</h3>
-      <pre>{JSON.stringify(trends, null, 2)}</pre>
+      {/* <h3>Trends Data (JSON)</h3> */}
+      {/* <pre>{JSON.stringify(trends, null, 2)}</pre> */}
       
     </div>
   );

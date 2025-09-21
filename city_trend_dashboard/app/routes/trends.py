@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Query
-from app.services.trends_service import cities, products, fetch_trends_for_city_product_timeframe
+from app.services.trends_service import cities, products, fetch_trends_for_city_product_timeframe, get_90_days_trend_with_analysis
+
+
 from app.services.db_service import collection
 
 router = APIRouter()
@@ -40,3 +42,11 @@ def get_trends(
         query["product"] = {"$regex": f"^{product}$", "$options": "i"}
     data = list(collection.find(query, {"_id": 0}).limit(limit))
     return data
+
+# New endpoint for 90 days trend analysis
+@router.get("/trend-analysis/90days")
+def get_90_days_trend_analysis(city: str = Query(...), product: str = Query(...), window: int = Query(7, ge=1, le=30)):
+    """
+    Returns 90 days trend data with moving average analysis for a city/product.
+    """
+    return get_90_days_trend_with_analysis(city, product, window)
